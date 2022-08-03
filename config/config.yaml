@@ -1,0 +1,46 @@
+# 不区分大小写
+app:
+  system: forest-user-center
+  env: local
+  host: http://localhost
+  port: 8083
+
+db:
+  sql:
+    default:
+      driver: mysql
+      host: 127.0.0.1
+      port: 3306
+      user: root 
+      password: Liu@1234
+      dbname: test
+      parseTime: False
+      tablePrefix: 
+      slowThresholdMs: 500 
+      
+  redis:
+    host: 127.0.0.1
+    port: 6379 
+    auth: 
+    select: 1
+
+logger:
+  filepath: /tmp
+  level: trace
+  prettyprint: true 
+  timestampformat: "15:04:05"
+  maxsize: 1
+  maxage: 3
+
+jwt:
+  key: haha
+  expires: 72000
+
+alarm:
+  robot_api: https://oapi.dingtalk.com/robot/send?access_token=fbedecfdbde6faeef9113e3b02b415ec1f8e135926661f8f7a39f2c465d7c223
+
+email:
+  host: smtp.qq.com
+  port: 465
+  username: 772532526@qq.com
+  authcode: wfhvsijxlyqvbefa

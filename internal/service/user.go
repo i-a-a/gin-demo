@@ -29,7 +29,7 @@ func (u User) Register(req dto.UserRegisterReq, resp *dto.UserRegisterResp) erro
 
 	// 检测账号重复
 	var count int64
-	common.DB.Model(model.UserPtr).Where("account = ?", req.Account).Count(&count)
+	model.UserPtr.DB().Where("account = ?", req.Account).Count(&count)
 	if count > 0 {
 		return response.String("账号已被注册")
 	}

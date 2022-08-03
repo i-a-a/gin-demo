@@ -12,6 +12,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+// 此包发起HTTP请求
+// curl.PostJson(api, body数据).AddHeader("xx", "xx").DoTo(解析到的结构体)
+
 const (
 	ContentTypeJSON           = "application/json"
 	ContentTypeFormData       = "application/form-data"

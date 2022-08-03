@@ -5,12 +5,18 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 )
 
 type Response struct {
-	Code int         `json:"code"`
-	Msg  string      `json:"msg"`
+	// 0:成功，-1:出错/拒绝，直接弹出消息。   其他：有含义的动作
+	Code int `json:"code"`
+	//
+	Msg string `json:"msg"`
+	//
 	Data interface{} `json:"data"`
+	// 用来排查问题
+	RequestId string `json:"request_id,omitempty"`
 }
 
 func Echo(ctx *gin.Context, data interface{}, err error) {
@@ -22,7 +28,7 @@ func Echo(ctx *gin.Context, data interface{}, err error) {
 	case Action:
 		Fail(ctx, x.Code, x.Msg)
 	// 拒绝：可预知，前端显示信息
-	case String:
+	case String: // 这里的code码也可以使用别的。使用-1的话，就和error不区分。
 		Fail(ctx, -1, x.Error())
 	// 错误：不可预知。
 	default:
@@ -41,13 +47,15 @@ func Success(ctx *gin.Context, data interface{}) {
 
 func Fail(ctx *gin.Context, code int, msg string) {
 	resp := Response{
-		Code: code,
-		Msg:  msg,
-		Data: struct{}{},
+		Code:      code,
+		Msg:       msg,
+		Data:      struct{}{},
+		RequestId: uuid.NewString(),
 	}
 	done(ctx, resp)
 }
 
+// 增加一个错误钩子，用来排查问题
 var (
 	errorHook func(errorMsg string)
 )
@@ -61,9 +69,10 @@ func Error(ctx *gin.Context, err error) {
 		errorHook(err.Error())
 	}
 	resp := Response{
-		Code: -1,
-		Msg:  err.Error(),
-		Data: struct{}{},
+		Code:      -1,
+		Msg:       err.Error(),
+		Data:      struct{}{},
+		RequestId: uuid.NewString(),
 	}
 	done(ctx, resp)
 }
@@ -77,5 +86,6 @@ func done(ctx *gin.Context, resp Response) {
 	ctx.Abort()
 	ctx.Data(http.StatusOK, "application/json", byteData)
 
+	// 这里和中间件log打配合，感觉分散在两处不太优雅，但是暂时找不到好方法。
 	ctx.Set("response", byteData)
 }

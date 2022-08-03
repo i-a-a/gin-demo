@@ -1,5 +1,6 @@
 package response
 
+// 鸭子类型，自定义error
 var (
 	_ error = Action{}
 	_ error = String("")

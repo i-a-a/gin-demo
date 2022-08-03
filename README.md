@@ -30,6 +30,8 @@
 
 ### 使用
 
+- `git clone https://github.com/i-a-a/gin-demo.git`
+
 - 根据 `config/config.default.yaml` 配置 `config/config.yaml` 
 
 - `go mod tidy` 

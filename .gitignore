@@ -2,9 +2,5 @@
 .DS_Store
 test
 tmp
-main
-Dockerfile
 app
-user-center
-log/*
-config.local.yaml
+config/config.yaml

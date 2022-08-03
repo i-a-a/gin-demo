@@ -12,6 +12,11 @@ func (b ID) IsValid() bool {
 	return b.Id > 0
 }
 
+type Times struct {
+	CreatedAt Datetime `json:"created_at" gorm:"type:datetime; not null; default:now(); comment:创建时间;"`
+	UpdatedAt Datetime `json:"updated_at" gorm:"type:datetime; not null; default:now() ON UPDATE now(); comment:更新时间;"`
+}
+
 // 我认为时间类型大多时候只是简单的存取，不需要进行判断，所以用string取代time.Time。
 // 使用Datetime，关闭gorm连接时的Parsetime。
 // 如果你不认同，自己去封装一个 time.Time。 参考https://gorm.io/zh_CN/docs/data_types.html

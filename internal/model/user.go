@@ -26,8 +26,7 @@ type User struct {
 	Password string `json:"-" gorm:"column:passwd; type:varchar(100); not null; default:''; comment:密码;"`
 	Salt     string `json:"-" gorm:"type:varchar(10); not null; default:''; comment:密码盐;"`
 
-	CreatedAt Datetime `json:"created_at" gorm:"type:datetime; not null; default:now(); comment:创建时间;"`
-	UpdatedAt Datetime `json:"updated_at" gorm:"type:datetime; not null; default:now() ON UPDATE now(); comment:更新时间;"`
+	Times
 }
 
 func (*User) GetByAccount(account string) (row User) {

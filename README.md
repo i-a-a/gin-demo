@@ -36,12 +36,6 @@
 
 - 首次进行数据库表迁移  `go run main.go -m true`  
 
-- 
-### 初始化
-- 初始化数据库表 `go run main.go -m true`  
-
-### 启动
-- `go run main.go` 或指定配置文件 `go run main.go -c config/config.yaml`
 
 ### 联系我
 QQ：772532526

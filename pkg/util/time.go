@@ -11,6 +11,6 @@ func Now() string {
 }
 
 func String2Time(s string) time.Time {
-	t, _ := time.Parse(layout, s)
+	t, _ := time.ParseInLocation(layout, s, time.Local)
 	return t
 }

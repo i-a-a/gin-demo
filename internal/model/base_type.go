@@ -18,6 +18,6 @@ func (b ID) IsValid() bool {
 type Datetime string
 
 func (d Datetime) ToTime() time.Time {
-	t, _ := time.Parse("2006-01-02 15:04:05", string(d))
+	t, _ := time.ParseInLocation("2006-01-02 15:04:05", string(d), time.Local)
 	return t
 }

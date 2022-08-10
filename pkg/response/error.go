@@ -2,21 +2,18 @@ package response
 
 // 鸭子类型，自定义error
 var (
-	_ error = Action{}
-	_ error = String("")
+	_ error = Msg("HelloWorld")
+	_ error = Code(67373)
 )
 
-type Action struct {
-	Code int
-	Msg  string
-}
+type Msg string
 
-func (a Action) Error() string {
-	return a.Msg
-}
-
-type String string
-
-func (f String) Error() string {
+func (f Msg) Error() string {
 	return string(f)
+}
+
+type Code int
+
+func (c Code) Error() string {
+	return "Do something"
 }

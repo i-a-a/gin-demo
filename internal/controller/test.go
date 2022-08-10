@@ -11,10 +11,9 @@ import (
 type test struct{}
 
 func init() {
-	var r = Engine
-
-	r.GET("/test", test{}.Index)
-	r.GET("/test/panic", test{}.Panic)
+	var r = Engine.Group("/test")
+	r.GET("/", test{}.Index)
+	r.GET("/panic", test{}.Panic)
 }
 
 func (t test) Index(c *gin.Context) {
@@ -28,5 +27,9 @@ func (t test) Index(c *gin.Context) {
 }
 
 func (t test) Panic(c *gin.Context) {
+	// error + runtime.Error
+	var x map[string]interface{}
+	x["a"] = 1
+	// error
 	panic("测试panic")
 }

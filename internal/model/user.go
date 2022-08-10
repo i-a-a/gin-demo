@@ -11,7 +11,7 @@ var (
 )
 
 type User struct {
-	ID
+	BaseID
 
 	// 主要字段放在前边
 	Nickname string `json:"nickname" gorm:"type:varchar(20); not null; default:''; comment:昵称;"`
@@ -26,7 +26,7 @@ type User struct {
 	Password string `json:"-" gorm:"column:passwd; type:varchar(100); not null; default:''; comment:密码;"`
 	Salt     string `json:"-" gorm:"type:varchar(10); not null; default:''; comment:密码盐;"`
 
-	Times
+	BaseTimes
 }
 
 func (*User) GetByAccount(account string) (row User) {

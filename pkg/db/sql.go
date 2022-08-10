@@ -23,6 +23,9 @@ type SQLConfig struct {
 	DBName    string
 	ParseTime bool
 
+	MaxIdleConns int
+	MaxOpenConns int
+
 	TablePrefix     string
 	LogPath         string
 	SlowThresholdMs int
@@ -33,9 +36,7 @@ func ConnectSQL(confs map[string]*SQLConfig) map[string]*gorm.DB {
 	for k := range confs {
 		switch confs[k].Driver {
 		case "mysql":
-			dbs[k] = connectMySQL(*confs[k])
-		case "postgres":
-			// dbs[k] = connectPostgres(*confs[k])
+			dbs[k] = connectMySQL(confs[k])
 		default:
 			panic("unknown driver: " + confs[k].Driver)
 		}
@@ -44,7 +45,7 @@ func ConnectSQL(confs map[string]*SQLConfig) map[string]*gorm.DB {
 	return dbs
 }
 
-func connectMySQL(conf SQLConfig) *gorm.DB {
+func connectMySQL(conf *SQLConfig) *gorm.DB {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=%t&loc=Local",
 		conf.User,
 		conf.Password,
@@ -68,45 +69,12 @@ func connectMySQL(conf SQLConfig) *gorm.DB {
 		panic("failed to connect database: " + err.Error())
 	}
 
-	SetDBConnParams(db, 10, 100, time.Hour)
+	SetDBConnParams(db, conf.MaxIdleConns, conf.MaxOpenConns, time.Hour)
 
 	SetLogger(db, conf.LogPath, conf.SlowThresholdMs)
 
 	return db
 }
-
-/*
-func connectPostgres(conf SQLConfig) *gorm.DB {
-	dsn := fmt.Sprintf(
-		"host=%s port=%d user=%s dbname=%s sslmode=disable password=%s TimeZone=%s",
-		conf.Host,
-		conf.Port,
-		conf.User,
-		conf.DBName,
-		conf.Password,
-		conf.TimeZone,
-	)
-
-	config := &gorm.Config{
-		NamingStrategy: schema.NamingStrategy{
-			TablePrefix:   conf.TablePrefix,
-			SingularTable: true,
-		},
-		DisableForeignKeyConstraintWhenMigrating: true,
-	}
-
-	db, err := gorm.Open(postgres.Open(dsn), config)
-	if err != nil {
-		panic("failed to connect database: " + err.Error())
-	}
-
-	SetDBConnParams(db, 10, 100, time.Hour)
-
-	SetLogger(db, conf.LogPath, conf.SlowThresholdMs)
-
-	return db
-}
-*/
 
 // 根据自己情况更改连接数
 func SetDBConnParams(db *gorm.DB, maxIdleConns int, maxOpenConns int, maxLifeTime time.Duration) {

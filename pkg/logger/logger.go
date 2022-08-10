@@ -1,4 +1,4 @@
-package util
+package logger
 
 import (
 	"os"
@@ -8,9 +8,12 @@ import (
 )
 
 // 对 logrus 加了按照文件大小进行分割的功能
-// 设置默认 logrus 输出位置
 
-type LoggerConfig struct {
+var (
+	LoggerHooks []func()
+)
+
+type Config struct {
 	Filepath string
 	Level    string
 
@@ -23,34 +26,7 @@ type LoggerConfig struct {
 	MaxAge  int // 多少天
 }
 
-// 设置默认 logrus 输出位置
-func SetDefultLogrus(conf LoggerConfig, filename string) {
-	level, err := logrus.ParseLevel(conf.Level)
-	if err != nil {
-		panic(err)
-	}
-	logrus.SetLevel(level)
-
-	logrus.SetFormatter(&logrus.JSONFormatter{
-		TimestampFormat: conf.TimestampFormat,
-		PrettyPrint:     conf.PrettyPrint,
-	})
-
-	if conf.Filepath == "" || filename == "" {
-		logrus.SetOutput(os.Stdout)
-	} else {
-		logrus.SetOutput(&lumberjack.Logger{
-			Filename:   conf.Filepath + "/" + filename,
-			MaxSize:    conf.MaxSize, // MB
-			MaxAge:     conf.MaxAge,  // Day
-			MaxBackups: 10,
-			LocalTime:  true,
-			Compress:   true,
-		})
-	}
-}
-
-func NewLogrus(conf LoggerConfig, filename string) *logrus.Logger {
+func NewLogrus(conf Config, filename string) *logrus.Logger {
 	logger := logrus.New()
 
 	level, err := logrus.ParseLevel(conf.Level)
@@ -76,6 +52,8 @@ func NewLogrus(conf LoggerConfig, filename string) *logrus.Logger {
 			Compress:   true,
 		})
 	}
+
+	logger.AddHook(hook{})
 
 	return logger
 }

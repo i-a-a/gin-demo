@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -30,12 +31,11 @@ func ApiLog() gin.HandlerFunc {
 
 type apiLogFormat struct {
 	Time       string          `json:"time"`
-	Path       string          `json:"path"`
+	Match      string          `json:"match"` // ${用户uid}-${路由}
 	Method     string          `json:"method"`
-	Cost       int64           `json:"cost" `          // 毫秒
-	Slow       bool            `json:"slow,omitempty"` // 慢请求
-	Uid        int             `json:"uid,omitempty"`
-	Query      string          `json:"query,omitempty"`
+	Cost       int64           `json:"cost" `           // 毫秒
+	Slow       bool            `json:"slow,omitempty"`  // 慢请求
+	Query      string          `json:"query,omitempty"` // 查询参数
 	BodyString string          `json:"body_string,omitempty"`
 	BodyJson   json.RawMessage `json:"body_json,omitempty"`
 	Response   json.RawMessage `json:"response"`
@@ -56,10 +56,14 @@ func printLog(ctx *gin.Context, bodyData []byte, start time.Time) {
 	apiLoger := apiLogFormat{
 		Time:   time.Now().Format("2006-01-02 15:04:05"),
 		Cost:   time.Since(start).Milliseconds(),
-		Path:   ctx.Request.URL.Path,
 		Method: ctx.Request.Method,
-		Uid:    ctx.GetInt("user_id"),
 		Query:  ctx.Request.URL.RawQuery,
+	}
+	uid := ctx.GetInt("uid")
+	if uid > 0 {
+		apiLoger.Match = strconv.Itoa(uid) + "-" + ctx.Request.URL.Path
+	} else {
+		apiLoger.Match = ctx.Request.URL.Path
 	}
 
 	if len(bodyData) > 0 && bodyData[0] == '{' {

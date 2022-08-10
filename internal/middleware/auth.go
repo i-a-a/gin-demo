@@ -9,7 +9,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-// JWT 验证
 // 使用方式：Header中增加 Authorization: Bearer <token>
 const authorization = "Authorization"
 
@@ -19,7 +18,7 @@ func Auth() gin.HandlerFunc {
 		index := strings.IndexByte(auth, ' ')
 		if auth == "" || index < 0 {
 			logrus.WithField(authorization, auth).Debug("Authorization is empty")
-			response.Fail(ctx, 2001, "Authorization is empty")
+			response.Echo(ctx, nil, response.Msg("Token为空")) //
 			return
 		}
 
@@ -28,10 +27,10 @@ func Auth() gin.HandlerFunc {
 		claims, err := token.ParseJWT(accessToken)
 		if err != nil {
 			if claims.IsExpired() {
-				response.Fail(ctx, 2002, "Token is expired")
+				response.Echo(ctx, nil, response.Code(2001)) // "Token已过期"
 			} else {
 				logrus.WithField(authorization, auth).Warn(err.Error())
-				response.Fail(ctx, 2003, "Authorization is invalid")
+				response.Echo(ctx, nil, response.Msg("Token错误"))
 			}
 			return
 		}

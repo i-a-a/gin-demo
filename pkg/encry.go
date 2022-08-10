@@ -1,4 +1,4 @@
-package util
+package pkg
 
 import (
 	"crypto/hmac"
@@ -6,13 +6,19 @@ import (
 	"encoding/hex"
 )
 
-func Sha256(s string) string {
+var (
+	Encry encry
+)
+
+type encry struct{}
+
+func (encry) Sha256(s string) string {
 	h := sha256.New()
 	h.Write([]byte(s))
 	return hex.EncodeToString(h.Sum(nil))
 }
 
-func HmacSha256(s string, secret string) string {
+func (encry) HmacSha256(s string, secret string) string {
 	h := hmac.New(sha256.New, []byte(secret))
 	h.Write([]byte(s))
 	return hex.EncodeToString(h.Sum(nil))

@@ -5,12 +5,12 @@ import (
 	"app/internal/common"
 	"app/internal/middleware"
 	"app/internal/model"
-	"app/pkg/curl"
+	"app/pkg"
 	"app/pkg/db"
-	"app/pkg/response"
 	"app/pkg/token"
-	"app/pkg/util"
 	"fmt"
+
+	"app/pkg/logger"
 
 	"github.com/sirupsen/logrus"
 )
@@ -30,19 +30,16 @@ func InitService() {
 	if config.Logger.Filepath != "" {
 		fmt.Println("日志将打印到：" + config.Logger.Filepath)
 		// 接口日志
-		middleware.ResponseLog = util.NewLogrus(config.Logger, "/response.log").Out
+		middleware.ResponseLog = logger.NewLogrus(config.Logger, "/response.log").Out
 		// 第三方HTTP请求日志
-		curl.Logger = util.NewLogrus(config.Logger, "/http.log").Out
+		pkg.HttpLogger = logger.NewLogrus(config.Logger, "/http.log").Out
 	}
 
 	// 默认logrus日志
-	util.SetDefultLogrus(config.Logger, "/app.log")
-	logrus.AddHook(common.LogrusHook{})
-
-	// 捕捉不可预知错误并打印
-	response.AddErrorHook(func(err string) {
-		logrus.WithField("stack", util.GetErrorStack(err, "internal")).Error(err)
-	})
+	defaultLogger := logger.NewLogrus(config.Logger, "app.log")
+	logrus.SetOutput(defaultLogger.Out)
+	logrus.SetFormatter(defaultLogger.Formatter)
+	logrus.SetLevel(defaultLogger.Level)
 
 	// 初始化JWT设置
 	token.SetConf(config.JWT)

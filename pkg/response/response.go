@@ -2,83 +2,51 @@ package response
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
+	"runtime"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 )
 
+// code为0，忽略msg； 1表示拒绝，弹出msg； -1表示未知错误，弹出msg；其它表示约定动作。
 type Response struct {
-	// 0:成功，-1:出错/拒绝，直接弹出消息。   其他：有含义的动作
-	Code int `json:"code"`
-	//
-	Msg string `json:"msg"`
-	//
-	Data interface{} `json:"data"`
-	// 用来排查问题
-	RequestId string `json:"request_id,omitempty"`
+	Code      int         `json:"code"`
+	Msg       string      `json:"msg"`
+	Data      interface{} `json:"data"`
+	RequestId string      `json:"request-id,omitempty"`
 }
 
+// data作为interface{}，传指针
 func Echo(ctx *gin.Context, data interface{}, err error) {
-	switch x := err.(type) {
-	// 成功
-	case nil:
-		Success(ctx, data)
-	// 失败：可预知，前端执行动作
-	case Action:
-		Fail(ctx, x.Code, x.Msg)
-	// 拒绝：可预知，前端显示信息
-	case String: // 这里的code码也可以使用别的。使用-1的话，就和error不区分。
-		Fail(ctx, -1, x.Error())
-	// 错误：不可预知。
-	default:
-		Error(ctx, err)
+	var r Response
+	if err == nil {
+		r.Msg = "ok"
+		r.Data = data
+	} else {
+		r.Msg = err.Error()
+		r.Data = struct{}{}
+		r.RequestId = uuid.NewString()
+		l := logrus.WithField("request-id", r.RequestId)
+		// 区分 拒绝、动作、未知错误
+		switch x := err.(type) {
+		case Msg:
+			r.Code = 1
+			l.Info(r.Msg)
+		case Code:
+			r.Code = int(x)
+			l.Warn(r.Msg)
+		default:
+			r.Code = -1
+			s := getErrorStack(err.Error(), "internal")
+			l.WithField("stack", s).Error(r.Msg)
+		}
 	}
-}
 
-func Success(ctx *gin.Context, data interface{}) {
-	resp := Response{
-		Code: 0,
-		Msg:  "ok",
-		Data: data,
-	}
-	done(ctx, resp)
-}
-
-func Fail(ctx *gin.Context, code int, msg string) {
-	resp := Response{
-		Code:      code,
-		Msg:       msg,
-		Data:      struct{}{},
-		RequestId: uuid.NewString(),
-	}
-	done(ctx, resp)
-}
-
-// 增加一个错误钩子，用来排查问题
-var (
-	errorHook func(errorMsg string)
-)
-
-func AddErrorHook(fn func(string)) {
-	errorHook = fn
-}
-
-func Error(ctx *gin.Context, err error) {
-	if errorHook != nil {
-		errorHook(err.Error())
-	}
-	resp := Response{
-		Code:      -1,
-		Msg:       err.Error(),
-		Data:      struct{}{},
-		RequestId: uuid.NewString(),
-	}
-	done(ctx, resp)
-}
-
-func done(ctx *gin.Context, resp Response) {
-	byteData, err := json.Marshal(resp)
+	byteData, err := json.Marshal(&r)
 	if err != nil {
 		panic(err)
 	}
@@ -86,6 +54,32 @@ func done(ctx *gin.Context, resp Response) {
 	ctx.Abort()
 	ctx.Data(http.StatusOK, "application/json", byteData)
 
-	// 这里和中间件log打配合，感觉分散在两处不太优雅，但是暂时找不到好方法。
+	// 这里和中间件log配合，感觉分散在两处不太优雅，但是暂时找不到好方法。
 	ctx.Set("response", byteData)
+}
+
+// 获取错误文件和行号。 去除go自带函数和外部包。
+func getErrorStack(errString string, splitDirName string) []string {
+	var pcs [32]uintptr
+	n := runtime.Callers(3, pcs[:])
+	idx := 0
+	recorder := []string{errString}
+
+	for i, pc := range pcs[:n] {
+		fn := runtime.FuncForPC(pc)
+		filepath, line := fn.FileLine(pc)
+
+		if strings.Contains(filepath, splitDirName) {
+			if idx == 0 {
+				idx = strings.Index(filepath, splitDirName)
+			}
+			recorder = append(recorder, fmt.Sprintf("%s:%d", filepath[idx:], line))
+		}
+
+		if i >= 20 {
+			break
+		}
+	}
+
+	return recorder
 }

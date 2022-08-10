@@ -9,17 +9,14 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// v1
 func init() {
-	var r = Engine.Group("/user")
+	var v1 = Engine.Group("/user/v1")
 	var u User
-
-	v1 := r.Group("/v1")
-
 	// 无需登录
-	v1.POST("register", u.Register)  // 注册
-	v1.POST("verify", u.Verify)      // 验证账号
-	v1.POST("login", u.Login)        // 登录
-	v1.POST("send_code", u.SendCode) // 发送验证码
+	v1.POST("send-code", u.SendCode) // 发送验证码
+	v1.POST("sign-up", u.SignUp)     // 注册
+	v1.POST("sign-in", u.SignIn)     // 登录
 
 	// 需要登录
 	v1.Use(middleware.Auth())
@@ -27,41 +24,15 @@ func init() {
 	v1.GET("info", u.GetInfo)   // 获取个人信息
 }
 
-// 这个结构体0字节， 不懂的话去查一下空struct
+// v2
+func init() {
+	// var v2 = Engine.Group("user/v2")
+	// var u User
+}
+
+// 这个结构体0字节，查一下空struct
 type User struct {
 	Service service.User
-}
-
-func (u User) Register(c *gin.Context) {
-	var req dto.UserRegisterReq
-	if !BindAndTrim(c, &req) {
-		return
-	}
-	var resp dto.UserRegisterResp
-	err := u.Service.Register(req, &resp)
-	response.Echo(c, &resp, err)
-}
-
-func (u User) Verify(c *gin.Context) {
-	var req dto.UserVerifyReq
-	if !Bind(c, &req) {
-		return
-	}
-	var resp dto.UserVerifyResp
-	err := u.Service.Verify(req, &resp)
-	response.Echo(c, &resp, err)
-}
-
-func (u User) Login(c *gin.Context) {
-	var req dto.UserLoginReq
-	if !BindAndTrim(c, &req) {
-		return
-	}
-	// 这个获取IP函数不准
-	req.IP = c.ClientIP()
-	var resp dto.UserLoginResp
-	err := u.Service.Login(req, &resp)
-	response.Echo(c, &resp, err)
 }
 
 func (u User) SendCode(c *gin.Context) {
@@ -71,6 +42,28 @@ func (u User) SendCode(c *gin.Context) {
 	}
 	var resp dto.UserSendCodeResp
 	err := u.Service.SendCode(req, &resp)
+	response.Echo(c, &resp, err)
+}
+
+func (u User) SignUp(c *gin.Context) {
+	var req dto.UserSignUpReq
+	if !BindAndTrim(c, &req) {
+		return
+	}
+	var resp dto.UserSignUpResp
+	err := u.Service.SignUp(req, &resp)
+	response.Echo(c, &resp, err)
+}
+
+func (u User) SignIn(c *gin.Context) {
+	var req dto.UserSignInReq
+	if !BindAndTrim(c, &req) {
+		return
+	}
+	// 这个获取IP函数不准
+	req.IP = c.ClientIP()
+	var resp dto.UserSignInResp
+	err := u.Service.SignIn(req, &resp)
 	response.Echo(c, &resp, err)
 }
 

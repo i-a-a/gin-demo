@@ -7,6 +7,15 @@ app:
   host: http://localhost # 对外地址 
   port: 8083 
 
+# 日志 (建议)
+logger:
+  filepath:  # 日志目录。 本地环境不填写，打印到终端。非本地请配置目录路径
+  level: debug # 好好利用日志级别，非本地环境调节到 info
+  prettyprint: true # 本地开启，日志换行。 非本地环境设置为 false
+  timestampformat: "2006-01-02 15:04:05"
+  maxsize: 30 # 单个文件最大M
+  maxage: 30 # 文件最多存在天数
+
 # 数据库 (改)
 db:
   # sql是个对象，以配置多数据库连接。(主从参考gorm文档自己写一下)
@@ -21,6 +30,8 @@ db:
       parsetime: False # 默认不解析数据库时间类型，具体查看代码中的Datetime类型
       tableprefix: 
       slowthresholdms: 500  #慢查询监控ms， 查看日志匹配"SLOW"
+      maxIdleConns: 0 # 最大空闲连接数
+      maxOpenConns: 0 # 最大连接数
 
   # (可选)
   redis:
@@ -29,20 +40,7 @@ db:
     auth: 
     select:  # 注意分库！
 
-# 日志 (建议)
-logger:
-  filepath:  # 日志目录。 本地环境不填写，打印到终端。非本地请配置目录路径
-  level: debug # 好好利用日志级别，非本地环境调节到 info
-  prettyprint: true # 本地开启，日志换行。 非本地环境设置为 false
-  timestampformat: "2006-01-02 15:04:05"
-  maxsize: 30 # 单个文件最大M
-  maxage: 30 # 文件最多存在天数
-
 # JWT (建议)
 jwt:
   key: HelloWord 
-  expires: 7200 #jwt过期秒数
-
-# 报警(可选)
-alarm:
-  robotapi:  # 机器人（注：local环境不触发机器人报警）
+  expires: 7200

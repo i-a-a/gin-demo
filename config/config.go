@@ -5,9 +5,10 @@ import (
 	"flag"
 	"strings"
 
+	"app/pkg"
 	"app/pkg/db"
+	"app/pkg/logger"
 	"app/pkg/token"
-	"app/pkg/util"
 
 	"github.com/spf13/viper"
 )
@@ -27,27 +28,26 @@ var (
 		SQL   map[string]*db.SQLConfig
 		Redis db.RedisConfig
 	}
-	Logger util.LoggerConfig
+	Logger logger.Config
 	JWT    token.JWTConfig
-	Alarm  struct {
-		RobotAPI string
-	}
 )
 
-// parse config file , and set to viper
 func init() {
-	var err error
-	parseFlag()
+	flag.StringVar(&Run.ConfigFile, "c", "./config/config.yaml", "指定配置文件")
+	flag.BoolVar(&Run.IsMigrate, "m", false, "是否数据库迁移")
+	flag.Parse()
+}
 
+func init() {
 	// 读取配置
-	if err = ReadConfigFile(Run.ConfigFile); err != nil {
+	if err := ReadConfigFile(Run.ConfigFile); err != nil {
 		panic(err)
 	}
 
 	// 配置目录处理
 	if Logger.Filepath != "" {
 		Logger.Filepath = strings.TrimSuffix(Logger.Filepath, "/")
-		if err := util.CheckDir(Logger.Filepath); err != nil {
+		if err := pkg.Filer.CheckDir(Logger.Filepath); err != nil {
 			panic(err)
 		}
 		for k := range DB.SQL {
@@ -56,14 +56,8 @@ func init() {
 	}
 }
 
-func parseFlag() {
-	flag.StringVar(&Run.ConfigFile, "c", "./config/config.yaml", "指定配置文件")
-	flag.BoolVar(&Run.IsMigrate, "m", false, "是否数据库迁移")
-	flag.Parse()
-}
-
 func ReadConfigFile(configFile string) error {
-	if !util.FileExist(configFile) {
+	if !pkg.Filer.IsExist(configFile) {
 		return errors.New("config file not found:" + configFile)
 	}
 
@@ -80,7 +74,6 @@ func ReadConfigFile(configFile string) error {
 	viper.UnmarshalKey("db", &DB)
 	viper.UnmarshalKey("logger", &Logger)
 	viper.UnmarshalKey("jwt", &JWT)
-	viper.UnmarshalKey("alarm", &Alarm)
 
 	return nil
 }

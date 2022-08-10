@@ -5,9 +5,9 @@ import (
 	"app/internal/common/constant"
 	"app/internal/common/dto"
 	"app/internal/model"
+	"app/pkg"
 	"app/pkg/response"
 	"app/pkg/token"
-	"app/pkg/util"
 	"sync"
 
 	"github.com/jinzhu/copier"
@@ -18,96 +18,68 @@ import (
 )
 
 var (
-	mu sync.Mutex
+	signupMu sync.Mutex
 )
 
 type User struct{}
 
-func (u User) Register(req dto.UserRegisterReq, resp *dto.UserRegisterResp) error {
-	mu.Lock()
-	defer mu.Unlock()
+// 发送验证码，自己去设计
+func (User) SendCode(req dto.UserSendCodeReq, resp *dto.UserSendCodeResp) error {
+
+	return nil
+}
+
+func (u User) SignUp(req dto.UserSignUpReq, resp *dto.UserSignUpResp) error {
+	signupMu.Lock()
+	defer signupMu.Unlock()
 
 	// 检测账号重复
 	var count int64
 	model.UserPtr.DB().Where("account = ?", req.Account).Count(&count)
 	if count > 0 {
-		return response.String("账号已被注册")
+		return response.Msg("账号已被注册")
 	}
 
-	err := common.DB.Transaction(func(tx *gorm.DB) error {
-		salt := util.RandomString(10)
-		password := util.HmacSha256(req.Password, salt)
+	// TODO 检查验证码
+
+	salt := pkg.Rand.String(10)
+	password := pkg.Encry.HmacSha256(req.Password, salt)
+
+	return common.DB.Transaction(func(tx *gorm.DB) error {
 		user := model.User{
 			Account:  req.Account,
 			Password: password,
 			Salt:     salt,
 			State:    constant.UserStateOk,
 		}
-		if err := tx.Create(&user).Error; err != nil {
+		err := tx.Create(&user).Error
+		if err != nil {
 			return err
 		}
 
-		// TODO 其它逻辑 。
+		// TODO 其它逻辑，相关表
 
 		log.Info("新注册账号: " + req.Account)
 
 		return nil
 	})
-
-	return err
 }
 
-func (u User) Verify(req dto.UserVerifyReq, resp *dto.UserVerifyResp) error {
-	var user model.User
-
-	common.DB.Select("id", "state").Where("account = ?", req.Account).Take(&user)
-	if user.Id == 0 {
-		return response.String("账号不存在")
+func (User) SignIn(req dto.UserSignInReq, resp *dto.UserSignInResp) error {
+	user := model.UserPtr.GetByAccount(req.Account)
+	if !user.IsValid() {
+		return response.Msg("账号不存在")
 	}
-
-	if user.State != constant.UserStateUncheck {
-		return response.String("账号已验证")
+	if user.Password != pkg.Encry.HmacSha256(req.Password, user.Salt) {
+		return response.Msg("密码错误")
 	}
-
-	// ------TODO 验证-------
-
-	// ---------------------
-
-	common.DB.Model(&user).UpdateColumn("state", constant.UserStateOk)
+	if user.State == constant.UserStateFrozen {
+		return response.Msg("账号已被禁用")
+	}
 
 	*resp = token.GenerateTokens(int(user.Id))
 
-	return nil
-}
-
-func (User) Login(req dto.UserLoginReq, resp *dto.UserLoginResp) error {
-	user := model.UserPtr.GetByAccount(req.Account)
-	if !user.IsValid() {
-		return response.String("用户不存在")
-	}
-
-	// 检查密码
-	if user.Password != util.HmacSha256(req.Password, user.Salt) {
-		return response.String("密码错误")
-	}
-
-	switch user.State {
-	case constant.UserStateUncheck:
-		return response.String("请先验证账号")
-	case constant.UserStateFrozen:
-		return response.String("账号已被冻结")
-	}
-
-	copier.Copy(&resp.User, &user)
-	resp.Token = token.GenerateTokens(int(resp.User.Id))
-
-	log.Info("用户登录：", resp.User.Id)
-	// === TODO 登录记录 ===
-
-	return nil
-}
-
-func (User) SendCode(req dto.UserSendCodeReq, resp *dto.UserSendCodeResp) error {
+	log.Info("用户登录：", user.Id)
 
 	return nil
 }
@@ -118,7 +90,6 @@ func (u User) PostInfo(uid int, req dto.UserPostInfoReq, resp *dto.UserGetInfoRe
 		return err
 	}
 
-	// 合并信息
 	copier.Copy(&resp, &req)
 
 	return common.DB.Model(model.UserPtr).Where("id = ?", resp.Id).Updates(&req).Error

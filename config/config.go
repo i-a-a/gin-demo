@@ -47,8 +47,8 @@ func init() {
 
 	// 配置赋值
 	viper.UnmarshalKey("app", &App)
-	viper.UnmarshalKey("db.sql", &db.SQL.Configs)
-	viper.UnmarshalKey("db.redis", &db.Redis.Config)
+	viper.UnmarshalKey("sql", &db.SQL.Configs)
+	viper.UnmarshalKey("redis", &db.Redis.Config)
 	viper.UnmarshalKey("logger", &logger.Config)
 	viper.UnmarshalKey("jwt", &token.JwtConfig)
 	viper.UnmarshalKey("robotApi", &pkg.RobotApi)

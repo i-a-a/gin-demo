@@ -16,29 +16,27 @@ logger:
   maxsize: 30 # 单个文件最大M
   maxage: 30 # 文件最多存在天数
 
-# 数据库 (改)
-db:
-  # sql是个对象，以配置多数据库连接。(主从参考gorm文档自己写一下)
-  sql:
-    default:
-      driver: mysql # 自动连接mysql或postgres
-      host: 127.0.0.1 
-      port: 3306
-      user: root 
-      password: 
-      dbname: 
-      parsetime: False # 默认不解析数据库时间类型，具体查看代码中的Datetime类型
-      tableprefix: 
-      slowthresholdms: 500  #慢查询监控ms， 查看日志匹配"SLOW"
-      maxIdleConns: 0 # 最大空闲连接数
-      maxOpenConns: 0 # 最大连接数
+# sql是个对象，以配置多数据库连接。(主从参考gorm文档自己写一下)
+sql:
+  default:
+    driver: mysql # 自动连接mysql或postgres
+    host: 127.0.0.1 
+    port: 3306
+    user: root 
+    password: 
+    dbname: 
+    parsetime: False # 默认不解析数据库时间类型，具体查看代码中的Datetime类型
+    tableprefix: 
+    slowthresholdms: 500  #慢查询监控ms， 查看日志匹配"SLOW"
+    maxIdleConns: 0 # 最大空闲连接数
+    maxOpenConns: 0 # 最大连接数
 
-  # (可选)
-  redis:
-    host: 
-    port:  
-    auth: 
-    select:  # 注意分库！
+# (可选)
+redis:
+  host: 
+  port:  
+  auth: 
+  select:  # 注意分库！
 
 # JWT (建议)
 jwt:

@@ -2,6 +2,7 @@ package db
 
 import (
 	"encoding/json"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -10,41 +11,43 @@ import (
 )
 
 var (
+	Redis       myRedis
 	ErrRedisNil = redis.ErrNil
 )
 
-type RedisConfig struct {
-	Host   string
-	Port   int
-	Auth   string
-	Select int
+type myRedis struct {
+	pool   *redis.Pool
+	Config struct {
+		Host   string
+		Port   int
+		Auth   string
+		Select int
+	}
 }
 
-type Redis struct {
-	pool *redis.Pool
-}
+func (r *myRedis) Connect(force bool) error {
+	if !force && r.Config.Host == "" {
+		fmt.Println("[WARN] redis host is empty")
+		return nil
+	}
+	conn, err := redis.Dial("tcp", r.Config.Host+":"+strconv.Itoa(r.Config.Port),
+		redis.DialPassword(r.Config.Auth),
+		redis.DialDatabase(r.Config.Select),
+		redis.DialConnectTimeout(time.Second*2),
+	)
+	if err != nil {
+		panic(err)
+	}
 
-func ConnRedis(conf RedisConfig) *Redis {
-	r := &Redis{}
 	r.pool = &redis.Pool{
-		MaxIdle:     500,
-		MaxActive:   100,
-		IdleTimeout: time.Second,
+		IdleTimeout: time.Second * 2,
 		Wait:        true,
 		Dial: func() (redis.Conn, error) {
-			con, err := redis.Dial("tcp", conf.Host+":"+strconv.Itoa(conf.Port),
-				redis.DialPassword(conf.Auth),
-				redis.DialDatabase(conf.Select),
-				redis.DialConnectTimeout(2*time.Second),
-				redis.DialReadTimeout(1*time.Second),
-				redis.DialWriteTimeout(1*time.Second))
-			if err != nil {
-				panic("redis pool is nil")
-			}
-			return con, nil
+			return conn, nil
 		},
 	}
-	return r
+	fmt.Println("Connect redis success")
+	return nil
 }
 
 type RedisCmd struct {
@@ -52,50 +55,50 @@ type RedisCmd struct {
 	err   error
 }
 
-func (r *Redis) Exists(key string) bool {
+func (r *myRedis) Exists(key string) bool {
 	conn := r.pool.Get()
 	defer conn.Close()
 	has, _ := redis.Bool(conn.Do("EXISTS", key))
 	return has
 }
 
-func (r *Redis) Del(keys ...interface{}) {
+func (r *myRedis) Del(keys ...interface{}) {
 	conn := r.pool.Get()
 	defer conn.Close()
 	conn.Do("DEL", keys...)
 }
 
-func (r *Redis) TTL(key string) int {
+func (r *myRedis) TTL(key string) int {
 	conn := r.pool.Get()
 	defer conn.Close()
 	i, _ := redis.Int(conn.Do("TTL", key))
 	return i
 }
 
-func (r *Redis) Get(key string) RedisCmd {
+func (r *myRedis) Get(key string) RedisCmd {
 	return r.Do("GET", key)
 }
 
-func (r *Redis) SetEx(key string, ex time.Duration, val interface{}) error {
+func (r *myRedis) SetEx(key string, ex time.Duration, val interface{}) error {
 	return r.autoSet("SETEX", key, ex.Seconds(), val)
 }
 
-func (r *Redis) Incr(key string) int {
+func (r *myRedis) Incr(key string) int {
 	conn := r.pool.Get()
 	defer conn.Close()
 	i, _ := redis.Int(conn.Do("INCR", key))
 	return i
 }
 
-func (r *Redis) HGet(key string, field string) RedisCmd {
+func (r *myRedis) HGet(key string, field string) RedisCmd {
 	return r.Do("HGET", key, field)
 }
 
-func (r *Redis) HSet(key string, field string, val interface{}) error {
+func (r *myRedis) HSet(key string, field string, val interface{}) error {
 	return r.autoSet("HSET", key, field, val)
 }
 
-func (r *Redis) autoSet(command string, args ...interface{}) error {
+func (r *myRedis) autoSet(command string, args ...interface{}) error {
 	conn := r.pool.Get()
 	defer conn.Close()
 
@@ -114,7 +117,7 @@ func (r *Redis) autoSet(command string, args ...interface{}) error {
 	}
 }
 
-func (r *Redis) Do(commandName string, args ...interface{}) RedisCmd {
+func (r *myRedis) Do(commandName string, args ...interface{}) RedisCmd {
 	conn := r.pool.Get()
 	defer conn.Close()
 	cmd := RedisCmd{}

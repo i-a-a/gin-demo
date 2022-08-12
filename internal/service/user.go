@@ -1,13 +1,13 @@
 package service
 
 import (
-	"app/internal/common"
 	"app/internal/common/constant"
 	"app/internal/common/dto"
 	"app/internal/model"
 	"app/pkg"
 	"app/pkg/response"
 	"app/pkg/token"
+	"errors"
 	"sync"
 
 	"github.com/jinzhu/copier"
@@ -33,9 +33,11 @@ func (u User) SignUp(req dto.UserSignUpReq, resp *dto.UserSignUpResp) error {
 	signupMu.Lock()
 	defer signupMu.Unlock()
 
+	var user model.User
+
 	// 检测账号重复
 	var count int64
-	model.UserPtr.DB().Where("account = ?", req.Account).Count(&count)
+	DB().Model(&user).Where("account = ?", req.Account).Count(&count)
 	if count > 0 {
 		return response.Msg("账号已被注册")
 	}
@@ -45,7 +47,7 @@ func (u User) SignUp(req dto.UserSignUpReq, resp *dto.UserSignUpResp) error {
 	salt := pkg.Rand.String(10)
 	password := pkg.Encry.HmacSha256(req.Password, salt)
 
-	return common.DB.Transaction(func(tx *gorm.DB) error {
+	return DB().Transaction(func(tx *gorm.DB) error {
 		user := model.User{
 			Account:  req.Account,
 			Password: password,
@@ -84,18 +86,20 @@ func (User) SignIn(req dto.UserSignInReq, resp *dto.UserSignInResp) error {
 	return nil
 }
 
-func (u User) PostInfo(uid int, req dto.UserPostInfoReq, resp *dto.UserGetInfoResp) error {
-	err := common.DB.Model(model.UserPtr).Take(&resp, uid).Error
-	if err != nil {
-		return err
+func (u User) PostInfo(uid uint32, req dto.UserPostInfoReq, resp *dto.UserGetInfoResp) error {
+	var p *model.User
+	DB().Model(p).Take(&resp, uid)
+	if !resp.IsValid() {
+		return errors.New("用户缺失")
 	}
 
 	copier.Copy(&resp, &req)
 
-	return common.DB.Model(model.UserPtr).Where("id = ?", resp.Id).Updates(&req).Error
+	return DB().Model(p).Where("id = ?", uid).Updates(&req).Error
 }
 
-func (u User) GetInfo(uid int, req dto.UserGetInfoReq, resp *dto.UserGetInfoResp) error {
-	err := model.UserPtr.DB().Take(&resp, uid).Error
+func (u User) GetInfo(uid uint32, req dto.UserGetInfoReq, resp *dto.UserGetInfoResp) error {
+	var p *model.User
+	err := DB().Model(p).Take(&resp, uid).Error
 	return err
 }

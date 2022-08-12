@@ -2,6 +2,7 @@ package controller
 
 import (
 	"app/internal/common/dto"
+	"app/internal/common/util"
 	"app/internal/middleware"
 	"app/internal/service"
 	"app/pkg/response"
@@ -37,52 +38,52 @@ type User struct {
 
 func (u User) SendCode(c *gin.Context) {
 	var req dto.UserSendCodeReq
-	if !Bind(c, &req) {
+	var resp dto.UserSendCodeResp
+	if !util.Bind(c, &req) {
 		return
 	}
-	var resp dto.UserSendCodeResp
 	err := u.Service.SendCode(req, &resp)
 	response.Echo(c, &resp, err)
 }
 
 func (u User) SignUp(c *gin.Context) {
 	var req dto.UserSignUpReq
-	if !BindAndTrim(c, &req) {
+	var resp dto.UserSignUpResp
+	if !util.BindAndTrim(c, &req) {
 		return
 	}
-	var resp dto.UserSignUpResp
 	err := u.Service.SignUp(req, &resp)
 	response.Echo(c, &resp, err)
 }
 
 func (u User) SignIn(c *gin.Context) {
 	var req dto.UserSignInReq
-	if !BindAndTrim(c, &req) {
+	var resp dto.UserSignInResp
+	if !util.BindAndTrim(c, &req) {
 		return
 	}
 	// 这个获取IP函数不准
 	req.IP = c.ClientIP()
-	var resp dto.UserSignInResp
 	err := u.Service.SignIn(req, &resp)
 	response.Echo(c, &resp, err)
 }
 
 func (u User) PostInfo(c *gin.Context) {
 	var req dto.UserPostInfoReq
-	if !BindAndTrim(c, &req) {
+	var resp dto.UserPostInfoResp
+	if !util.BindAndTrim(c, &req) {
 		return
 	}
-	uid := GetUid(c)
-	var resp dto.UserPostInfoResp
-	err := u.Service.PostInfo(uid, req, &resp)
+	err := u.Service.PostInfo(util.GetUid(c), req, &resp)
 	response.Echo(c, &resp, err)
 }
 
 func (u User) GetInfo(c *gin.Context) {
 	var req dto.UserGetInfoReq
-	c.ShouldBind(&req)
-	uid := GetUid(c)
 	var resp dto.UserGetInfoResp
-	err := u.Service.GetInfo(uid, req, &resp)
+	if !util.Bind(c, &req) {
+		return
+	}
+	err := u.Service.GetInfo(util.GetUid(c), req, &resp)
 	response.Echo(c, &resp, err)
 }

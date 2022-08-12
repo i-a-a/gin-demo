@@ -3,7 +3,7 @@ package response
 // 鸭子类型，自定义error
 var (
 	_ error = Msg("HelloWorld")
-	_ error = Code(67373)
+	_ error = Code(0)
 )
 
 type Msg string
@@ -15,5 +15,14 @@ func (f Msg) Error() string {
 type Code int
 
 func (c Code) Error() string {
-	return "Do something"
+	s, _ := codes[int(c)]
+	return s
+}
+
+var codes = map[int]string{}
+
+func ExtendCodeMap(m map[int]string) {
+	for k, v := range m {
+		codes[k] = v
+	}
 }

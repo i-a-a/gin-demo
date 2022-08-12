@@ -1,11 +1,12 @@
 package dto
 
 import (
+	"app/internal/model"
 	"app/pkg/token"
 )
 
 type UserInfo struct {
-	Id        uint32 `json:"id"`
+	model.BaseID
 	Gender    uint8  `json:"gender"`
 	Age       uint8  `json:"age"`
 	Account   string `json:"account"`

@@ -1,11 +1,15 @@
 package model
 
 import (
-	"app/internal/common"
+	"app/pkg/db"
+
+	"gorm.io/gorm"
 )
 
 func AutoMigrate() {
-	common.DB.AutoMigrate(
-		&User{},
-	)
+
+}
+
+func DB() *gorm.DB {
+	return db.GetDB("default")
 }

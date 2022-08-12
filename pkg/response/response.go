@@ -8,19 +8,16 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 )
 
 // code为0，忽略msg； 1表示拒绝，弹出msg； -1表示未知错误，弹出msg；其它表示约定动作。
 type Response struct {
-	Code      int         `json:"code"`
-	Msg       string      `json:"msg"`
-	Data      interface{} `json:"data"`
-	RequestId string      `json:"request-id,omitempty"`
+	Code int         `json:"code"`
+	Msg  string      `json:"msg"`
+	Data interface{} `json:"data"`
 }
 
-// data作为interface{}，传指针
 func Echo(ctx *gin.Context, data interface{}, err error) {
 	var r Response
 	if err == nil {
@@ -29,20 +26,18 @@ func Echo(ctx *gin.Context, data interface{}, err error) {
 	} else {
 		r.Msg = err.Error()
 		r.Data = struct{}{}
-		r.RequestId = uuid.NewString()
-		l := logrus.WithField("request-id", r.RequestId)
 		// 区分 拒绝、动作、未知错误
 		switch x := err.(type) {
 		case Msg:
 			r.Code = 1
-			l.Info(r.Msg)
+			logrus.Info(r.Msg)
 		case Code:
 			r.Code = int(x)
-			l.Warn(r.Msg)
+			logrus.Warn(r.Msg)
 		default:
 			r.Code = -1
 			s := getErrorStack(err.Error(), "internal")
-			l.WithField("stack", s).Error(r.Msg)
+			logrus.WithField("stack", s).Error(r.Msg)
 		}
 	}
 
@@ -54,7 +49,7 @@ func Echo(ctx *gin.Context, data interface{}, err error) {
 	ctx.Abort()
 	ctx.Data(http.StatusOK, "application/json", byteData)
 
-	// 这里和中间件log配合，感觉分散在两处不太优雅，但是暂时找不到好方法。
+	// 这里和中间件log配合
 	ctx.Set("response", byteData)
 }
 

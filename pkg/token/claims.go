@@ -7,19 +7,11 @@ import (
 )
 
 var (
-	jwtKey     = []byte("HelloWorld")
-	jwtExpires = time.Hour * 2
+	JwtConfig struct {
+		Key     string
+		Expires int
+	}
 )
-
-type JWTConfig struct {
-	Key     string
-	Expires int
-}
-
-func SetConf(conf JWTConfig) {
-	jwtKey = []byte(conf.Key)
-	jwtExpires = time.Duration(conf.Expires) * time.Second
-}
 
 // 签名体
 type Claims struct {

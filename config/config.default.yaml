@@ -44,3 +44,6 @@ db:
 jwt:
   key: HelloWord 
   expires: 7200
+
+# 机器人
+robotApi: https://oapi.dingtalk.com/robot/send?access_token=fbedecfdbde6faeef9113e3b02b415ec1f8e135926661f8f7a39f2c465d7c223

@@ -1,10 +1,6 @@
 package common
 
-import (
-	"app/pkg/db"
-
-	"gorm.io/gorm"
-)
+import "fmt"
 
 var (
 	IsLocal bool
@@ -12,7 +8,14 @@ var (
 	IsProd  bool
 )
 
-var (
-	DB    *gorm.DB
-	Redis *db.Redis
-)
+func SetEnv(env string) {
+	switch env {
+	case "local":
+		IsLocal = true
+	case "prod":
+		IsProd = true
+	default:
+		IsDev = true
+	}
+	fmt.Println("当前环境: " + env)
+}

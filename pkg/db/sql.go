@@ -14,7 +14,28 @@ import (
 	"gorm.io/gorm/schema"
 )
 
-type SQLConfig struct {
+var (
+	SQL sql
+)
+
+func GetDB(key string) *gorm.DB {
+	return SQL.dbs[key]
+}
+
+type sql struct {
+	dbs     map[string]*gorm.DB
+	Configs map[string]*sqlConfig
+}
+
+func (s *sql) Connect() {
+	s.dbs = make(map[string]*gorm.DB, len(s.Configs))
+	for k := range s.Configs {
+		s.dbs[k] = connectMySQL(s.Configs[k])
+	}
+	fmt.Println("Connect SQL Success")
+}
+
+type sqlConfig struct {
 	Driver    string
 	Host      string
 	Port      int
@@ -26,26 +47,12 @@ type SQLConfig struct {
 	MaxIdleConns int
 	MaxOpenConns int
 
-	TablePrefix     string
 	LogPath         string
+	TablePrefix     string
 	SlowThresholdMs int
 }
 
-func ConnectSQL(confs map[string]*SQLConfig) map[string]*gorm.DB {
-	dbs := make(map[string]*gorm.DB, len(confs))
-	for k := range confs {
-		switch confs[k].Driver {
-		case "mysql":
-			dbs[k] = connectMySQL(confs[k])
-		default:
-			panic("unknown driver: " + confs[k].Driver)
-		}
-	}
-
-	return dbs
-}
-
-func connectMySQL(conf *SQLConfig) *gorm.DB {
+func connectMySQL(conf *sqlConfig) *gorm.DB {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=%t&loc=Local",
 		conf.User,
 		conf.Password,
@@ -65,7 +72,7 @@ func connectMySQL(conf *SQLConfig) *gorm.DB {
 
 	db, err := gorm.Open(mysql.Open(dsn), config)
 	if err != nil {
-		log.Println("DB dsn : " + dsn)
+		fmt.Println("DB dsn : " + dsn)
 		panic("failed to connect database: " + err.Error())
 	}
 

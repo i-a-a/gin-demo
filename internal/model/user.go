@@ -1,11 +1,5 @@
 package model
 
-import (
-	"app/internal/common"
-
-	"gorm.io/gorm"
-)
-
 var (
 	UserPtr *User
 )
@@ -30,13 +24,6 @@ type User struct {
 }
 
 func (*User) GetByAccount(account string) (row User) {
-	common.DB.Where("account = ?", account).Take(&row)
+	DB().Where("account = ?", account).Take(&row)
 	return
-}
-
-// model.UserPtr.DB()  会不会比 common.DB.Model(model.UserPtr) 更清晰简洁？
-// 虽然gorm有时候可以不指定model，但是不太保险。
-// 为每一个model写一个DB函数，可以在多数据库连接的时候在service层不再考虑
-func (*User) DB() *gorm.DB {
-	return common.DB.Model(UserPtr)
 }

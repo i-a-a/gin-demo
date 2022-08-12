@@ -1,4 +1,4 @@
-package controller
+package util
 
 import (
 	"app/pkg/response"
@@ -17,24 +17,21 @@ var (
 	trans    translator.Translator
 )
 
-// 自定义中文验证器
 func init() {
 	uni := translator.New(zh.New())
 	trans, _ = uni.GetTranslator("zh")
 	validate = validator.New()
-	//注册一个函数，获取struct tag里自定义的label作为字段名
 	validate.RegisterTagNameFunc(func(fld reflect.StructField) string {
 		return "「" + fld.Name + "」"
 	})
-	//注册翻译器
 	err := zh_translations.RegisterDefaultTranslations(validate, trans)
 	if err != nil {
 		panic("翻译器初始化失败 : " + err.Error())
 	}
 }
 
-func GetUid(c *gin.Context) int {
-	return c.GetInt("uid")
+func GetUid(c *gin.Context) uint32 {
+	return uint32(c.GetInt("uid"))
 }
 
 // 参数验证，务必在false时return。 若非强校验，使用c.ShouldBind(&req)
@@ -57,11 +54,10 @@ func BindAndTrim(c *gin.Context, to interface{}) bool {
 	if !Bind(c, to) {
 		return false
 	}
-	TrimString(to)
 	return true
 }
 
-func TrimString(obj interface{}) {
+func trimString(obj interface{}) {
 	elem := reflect.Indirect(reflect.ValueOf(obj))
 	for i := 0; i < elem.NumField(); i++ {
 		field := elem.Field(i)
@@ -71,7 +67,7 @@ func TrimString(obj interface{}) {
 				field.SetString(strings.TrimSpace(field.String()))
 			}
 		case reflect.Struct:
-			TrimString(field.Addr().Interface())
+			trimString(field.Addr().Interface())
 		}
 	}
 }

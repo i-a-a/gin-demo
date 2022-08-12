@@ -6,7 +6,6 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"os"
 	"strconv"
 	"time"
@@ -18,7 +17,7 @@ import (
 // #### 打印请求和返回信息 ####
 
 var (
-	ResponseLog io.Writer = os.Stdout
+	ResponseLogger io.Writer = os.Stdout
 )
 
 func ApiLog() gin.HandlerFunc {
@@ -33,11 +32,9 @@ type apiLogFormat struct {
 	Time       string          `json:"time"`
 	Match      string          `json:"match"` // ${用户uid}-${路由}
 	Method     string          `json:"method"`
-	Cost       int64           `json:"cost" `           // 毫秒
-	Slow       bool            `json:"slow,omitempty"`  // 慢请求
-	Query      string          `json:"query,omitempty"` // 查询参数
-	BodyString string          `json:"body_string,omitempty"`
-	BodyJson   json.RawMessage `json:"body_json,omitempty"`
+	Cost       int64           `json:"cost,omitempty"` // 毫秒
+	BodyString string          `json:"reqString,omitempty"`
+	BodyJson   json.RawMessage `json:"reqJson,omitempty"`
 	Response   json.RawMessage `json:"response"`
 }
 
@@ -57,35 +54,44 @@ func printLog(ctx *gin.Context, bodyData []byte, start time.Time) {
 		Time:   time.Now().Format("2006-01-02 15:04:05"),
 		Cost:   time.Since(start).Milliseconds(),
 		Method: ctx.Request.Method,
-		Query:  ctx.Request.URL.RawQuery,
 	}
+	// match 在搜索时，使用 ${用户uid}-${路由} 格式
 	uid := ctx.GetInt("uid")
 	if uid > 0 {
-		apiLoger.Match = strconv.Itoa(uid) + "-" + ctx.Request.URL.Path
-	} else {
-		apiLoger.Match = ctx.Request.URL.Path
+		apiLoger.Match += strconv.Itoa(uid) + "-"
+	}
+	apiLoger.Match += ctx.Request.URL.Path
+	if ctx.Request.URL.RawQuery != "" {
+		apiLoger.Match += "?" + ctx.Request.URL.RawQuery
 	}
 
+	// 请求body，json时使用json.RawMessage便于观看
 	if len(bodyData) > 0 && bodyData[0] == '{' {
 		apiLoger.BodyJson = bodyData
 	} else {
-		apiLoger.BodyString, _ = url.QueryUnescape(string(bodyData))
+		apiLoger.BodyString = string(bodyData)
 	}
 
-	if apiLoger.Cost > 300 {
-		apiLoger.Slow = true
-	}
-
+	// 返回数据也是json.RawMessage
 	resp, has := ctx.Get("response")
 	if has && resp != nil {
 		apiLoger.Response = resp.([]byte)
 	}
 
-	b, err := json.Marshal(apiLoger)
+	// 自定义的json编码，避免转义
+	b, err := JSONMarshal(apiLoger)
 	if err != nil {
 		logrus.Error(err)
 		return
 	}
-	ResponseLog.Write(b)
-	ResponseLog.Write([]byte("\n"))
+	ResponseLogger.Write(b)
+	ResponseLogger.Write([]byte("\n"))
+}
+
+func JSONMarshal(t interface{}) ([]byte, error) {
+	buffer := &bytes.Buffer{}
+	encoder := json.NewEncoder(buffer)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(t)
+	return buffer.Bytes(), err
 }

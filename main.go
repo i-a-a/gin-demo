@@ -9,7 +9,9 @@ import (
 	"app/pkg/db"
 	"app/pkg/logger"
 	"fmt"
+	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/sirupsen/logrus"
 )
@@ -36,7 +38,14 @@ func main() {
 
 	// 启动HTTP服务
 	fmt.Println("启动HTTP服务: " + config.App.Host + ":" + strconv.Itoa(config.App.Port))
-	if err := controller.Engine.Run(":" + strconv.Itoa(config.App.Port)); err != nil {
+	s := &http.Server{
+		Addr:           ":" + strconv.Itoa(config.App.Port),
+		Handler:        controller.Engine,
+		ReadTimeout:    5 * time.Second,
+		WriteTimeout:   5 * time.Second,
+		MaxHeaderBytes: 1 << 20, // 1M
+	}
+	if err := s.ListenAndServe(); err != nil {
 		panic(err)
 	}
 }

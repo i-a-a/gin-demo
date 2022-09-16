@@ -1,11 +1,8 @@
 package service
 
-import (
-	"app/pkg/db"
+import "sync"
 
-	"gorm.io/gorm"
+var (
+	// 注册互斥锁
+	SignUpMu sync.Mutex
 )
-
-func DB() *gorm.DB {
-	return db.GetDB("default")
-}

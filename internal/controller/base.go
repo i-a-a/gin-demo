@@ -2,30 +2,27 @@ package controller
 
 import (
 	"app/internal/middleware"
-	"app/pkg/response"
+	"app/pkg/carrot"
 
 	"github.com/gin-gonic/gin"
 )
 
 var (
-	Engine = NewEngine()
+	Engine *gin.Engine
 )
 
-func NewEngine() *gin.Engine {
-
+func init() {
 	gin.SetMode(gin.ReleaseMode)
 
-	engine := gin.New()
-	engine.Use(middleware.CustomRecovery(), middleware.ApiLog())
+	Engine = gin.New()
+	Engine.Use(middleware.CustomRecovery())
 
 	// 404
-	engine.NoRoute(func(c *gin.Context) {
-		response.Echo(c, nil, response.Msg("路由不存在"))
+	Engine.NoRoute(func(c *gin.Context) {
+		carrot.New(c).Echo(nil, carrot.Msg("路由不存在"))
 	})
 	// ping
-	engine.GET("ping", func(c *gin.Context) {
-		response.Echo(c, "pong", nil)
+	Engine.GET("ping", func(c *gin.Context) {
+		carrot.New(c).Echo("pong", nil)
 	})
-
-	return engine
 }

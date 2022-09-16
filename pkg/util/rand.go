@@ -1,4 +1,4 @@
-package pkg
+package util
 
 import (
 	"math/rand"
@@ -6,7 +6,6 @@ import (
 )
 
 var (
-	Rand random
 	seed *rand.Rand = rand.New(rand.NewSource(time.Now().UnixNano()))
 )
 
@@ -16,18 +15,16 @@ const (
 	CharsetWordLower = "abcdefghijklmnopqrstuvwxyz"
 )
 
-type random struct{}
-
 // 随机数，最大不包含n本身
-func (random) Int(n int) int {
+func RandInt(n int) int {
 	return seed.Intn(n)
 }
 
-func (r random) String(len int) string {
-	return r.StringWithCharset(len, CharsetWordUpper+CharsetNumber)
+func RandString(len int) string {
+	return RandStringWithCharset(len, CharsetWordUpper+CharsetNumber)
 }
 
-func (random) StringWithCharset(length int, charset string) string {
+func RandStringWithCharset(length int, charset string) string {
 	b := make([]byte, length)
 	for i := range b {
 		b[i] = charset[seed.Intn(len(charset))]

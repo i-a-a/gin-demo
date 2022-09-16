@@ -6,21 +6,26 @@
 ### 目录结构
 
 ```
-    ├── config              (配置解析)
-    |── internal
+    ├── config              (配置)
+    |── internal            (业务代码)
     |   ├── common          (数据库操作)
-    |   |   ├── constant    (常量)
     |   |   ├── dto         (请求、返回结构体)
+    |   |   ├── enum        (枚举值)
+    |   |   ├── helper      (自定义工具函数，具有业务属性)
+    |   |   ├── sdk         (SDK)
     |   ├── controller      (控制层、路由器)
     |   ├── middleware      (中间件)                    
     |   ├── model           (模型层)                        
     |   └── service         (逻辑层)                    
-    └── pkg  
-        ├── db              (mysql、redis)
-        ├── logger          (日志)
-        ├── response        (返回封装)
-        ├── token           (JWT)
-      
+    |── pkg                 (工具包，不包含业务逻辑)
+    |   ├── db              (mysql、redis)
+    |   ├── response        (返回封装)
+    |   ├── token           (JWT)
+    |   └── util            (工具函数: 加密、文件操作、HTTP请求、随机数、机器人通知)    
+    |── script              (脚本)        
+    |── static              (静态资源)
+
+
 ```
 
 ### 使用

@@ -44,12 +44,12 @@ func generateJWT(uid int) (string, int64) {
 	claims := Claims{
 		Uid: uid,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Duration(JwtConfig.Expires) * time.Second).Unix(),
+			ExpiresAt: time.Now().Add(jwtExpires).Unix(),
 		},
 	}
 
 	tokenClaims := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-	token, err := tokenClaims.SignedString([]byte(JwtConfig.Key))
+	token, err := tokenClaims.SignedString(jwtKey)
 	if err != nil {
 		panic(err)
 	}
@@ -60,7 +60,7 @@ func generateJWT(uid int) (string, int64) {
 // 解析JWT，注意过期不是错误，自己判断 IsExpired()
 func ParseJWT(token string) (*Claims, error) {
 	tokenClaims, err := jwt.ParseWithClaims(token, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(JwtConfig.Key), nil
+		return jwtKey, nil
 	})
 
 	var claims *Claims

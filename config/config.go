@@ -2,66 +2,72 @@ package config
 
 import (
 	"flag"
+	"fmt"
 	"strings"
-
-	"app/pkg"
-	"app/pkg/db"
-	"app/pkg/logger"
-	"app/pkg/token"
 
 	"github.com/spf13/viper"
 )
 
 var (
-	Run struct {
+	IsLocal bool
+	IsDev   bool
+	IsTest  bool
+	IsProd  bool
+
+	IsDebug bool
+)
+
+var (
+	// 启动参数
+	Flag struct {
 		ConfigFile string
 		IsMigrate  bool
 	}
+	// 配置解析
 	App struct {
-		System string
 		Env    string
+		Debug  bool
+		System string
 		Host   string
-		Port   int
+		Port   string
+		LogDir string
+		Key    string
 	}
 )
 
 func init() {
-	flag.StringVar(&Run.ConfigFile, "c", "./config/config.yaml", "指定配置文件")
-	flag.BoolVar(&Run.IsMigrate, "m", false, "是否数据库迁移")
+	flag.StringVar(&Flag.ConfigFile, "c", "./config/config.yaml", "指定配置文件")
+	flag.BoolVar(&Flag.IsMigrate, "m", false, "是否数据库迁移")
 	flag.Parse()
-}
 
-func init() {
-	if !pkg.Filer.IsExist(Run.ConfigFile) {
-		panic("config file not found:" + Run.ConfigFile)
-	}
-
-	// 解析配置
-	viper.SetConfigFile(Run.ConfigFile)
-	ext := Run.ConfigFile[strings.LastIndexByte(Run.ConfigFile, '.')+1:]
+	// 读取配置
+	viper.SetConfigFile(Flag.ConfigFile)
+	ext := Flag.ConfigFile[strings.LastIndexByte(Flag.ConfigFile, '.')+1:]
 	viper.SetConfigType(ext)
-	err := viper.ReadInConfig()
-	if err != nil {
+
+	if err := LoadConfig(); err != nil {
 		panic(err)
 	}
 
-	// 配置赋值
-	viper.UnmarshalKey("app", &App)
-	viper.UnmarshalKey("sql", &db.SQL.Configs)
-	viper.UnmarshalKey("redis", &db.Redis.Config)
-	viper.UnmarshalKey("logger", &logger.Config)
-	viper.UnmarshalKey("jwt", &token.JwtConfig)
-	viper.UnmarshalKey("robotApi", &pkg.RobotApi)
+	fmt.Printf("当前环境：%s，服务端口：%s \n", App.Env, App.Port)
+}
 
-	// 日志目录检查及设置
-	if logger.Config.Filepath != "" {
-		logDir := strings.TrimSuffix(logger.Config.Filepath, "/")
-		if err := pkg.Filer.CheckDir(logDir); err != nil {
-			panic(err)
-		}
-		for i := range db.SQL.Configs {
-			db.SQL.Configs[i].LogPath = logDir
-		}
+// 加载配置
+func LoadConfig() error {
+	err := viper.ReadInConfig()
+	if err != nil {
+		return err
 	}
 
+	// 解析配置
+	viper.UnmarshalKey("app", &App)
+
+	// 环境变量
+	IsLocal = App.Env == "local"
+	IsDev = App.Env == "dev"
+	IsTest = App.Env == "test"
+	IsProd = App.Env == "prod"
+	IsDebug = App.Debug
+
+	return nil
 }

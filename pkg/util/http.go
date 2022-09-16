@@ -1,4 +1,4 @@
-package pkg
+package util
 
 import (
 	"bytes"
@@ -6,22 +6,18 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"time"
+
+	"github.com/sirupsen/logrus"
 )
 
 var (
-	// Demo: pkg.Http.PostJson("http://xxx.com/yy", map[string]string{"a": "1"}).Do()
-	Http myHttp
-	// 日志记录器
-	HttpLogger io.Writer = os.Stdout
 	// 默认超时时间
-	httpDefaultTimeout = time.Second * 3
+	httpDefaultTimeout = time.Second * 5
 )
 
-type myHttp struct{}
-
-func (myHttp) Get(url string, params map[string]string) *httpBuilder {
+// Demo: pkg.HttpGet("http://xxx.com/yy", map[string]string{"a": "1"}).Do()
+func HttpGet(url string, params map[string]string) *httpBuilder {
 	var r httpBuilder
 	r.Method = http.MethodGet
 	if len(params) > 0 {
@@ -32,7 +28,7 @@ func (myHttp) Get(url string, params map[string]string) *httpBuilder {
 	return &r
 }
 
-func (myHttp) PostJson(url string, bodyData interface{}) *httpBuilder {
+func HttpPostJson(url string, bodyData interface{}) *httpBuilder {
 	var r httpBuilder
 	r.Method = http.MethodPost
 	r.Url = url
@@ -43,7 +39,7 @@ func (myHttp) PostJson(url string, bodyData interface{}) *httpBuilder {
 	return &r
 }
 
-func (myHttp) PostForm(url string, bodyData map[string]string) *httpBuilder {
+func HttpPostForm(url string, bodyData map[string]string) *httpBuilder {
 	var r httpBuilder
 	r.Method = http.MethodPost
 	r.Url = url
@@ -156,6 +152,5 @@ func (r *httpBuilder) DoTo(to interface{}) error {
 func (r *httpBuilder) writeLog(start time.Time) {
 	r.Cost = time.Since(start).Milliseconds()
 	info, _ := json.Marshal(r)
-	HttpLogger.Write(info)
-	HttpLogger.Write([]byte("\t\n"))
+	logrus.WithField("HTTP", json.RawMessage(info)).Info()
 }

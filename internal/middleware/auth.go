@@ -1,15 +1,14 @@
 package middleware
 
 import (
-	"app/pkg/response"
+	"app/pkg/carrot"
 	"app/pkg/token"
 	"strings"
 
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 )
 
-// 使用方式：Header中增加 Authorization: Bearer <token>
+// 使用方式：Header中增加 Authorization: Bearer <token> , 这是一种规范
 const authorization = "Authorization"
 
 func Auth() gin.HandlerFunc {
@@ -17,20 +16,18 @@ func Auth() gin.HandlerFunc {
 		auth := ctx.GetHeader(authorization)
 		index := strings.IndexByte(auth, ' ')
 		if auth == "" || index < 0 {
-			logrus.WithField(authorization, auth).Debug("Authorization is empty")
-			response.Echo(ctx, nil, response.Msg("Token为空")) //
+			// carrot.New(ctx).Echo(nil, types.Msg("Authorization is empty"))
 			return
 		}
 
 		accessToken := auth[index+1:]
-
 		claims, err := token.ParseJWT(accessToken)
 		if err != nil {
 			if claims.IsExpired() {
-				response.Echo(ctx, nil, response.Code(2001)) // "Token已过期"
+				// token过期，需要前端判断code，执行刷新token动作
+				carrot.New(ctx).Echo(nil, carrot.Msg("Authorization is expired"))
 			} else {
-				logrus.WithField(authorization, auth).Warn(err.Error())
-				response.Echo(ctx, nil, response.Msg("Token错误"))
+				carrot.New(ctx).Echo(nil, carrot.Msg("Authorization is wrong"))
 			}
 			return
 		}

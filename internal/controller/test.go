@@ -1,7 +1,7 @@
 package controller
 
 import (
-	"app/pkg/response"
+	"app/pkg/carrot"
 	"strconv"
 	"time"
 
@@ -13,17 +13,20 @@ type test struct{}
 func init() {
 	var r = Engine.Group("/test")
 	r.GET("/", test{}.Index)
+	r.POST("/", test{}.Index)
 	r.GET("/panic", test{}.Panic)
 }
 
 func (t test) Index(c *gin.Context) {
+	app := carrot.New(c)
+
 	sleep := c.Query("sleep")
 	if sleep != "" {
 		i, _ := strconv.Atoi(sleep)
 		time.Sleep(time.Duration(i) * time.Second)
 	}
 
-	response.Echo(c, nil, nil)
+	app.Echo("hahah", nil)
 }
 
 func (t test) Panic(c *gin.Context) {

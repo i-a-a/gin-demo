@@ -1,7 +1,7 @@
 package middleware
 
 import (
-	"app/pkg/response"
+	"app/pkg/carrot"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -13,6 +13,6 @@ func CustomRecovery() gin.HandlerFunc {
 		if !ok {
 			err = fmt.Errorf("%v", recovered)
 		}
-		response.Echo(c, nil, err)
+		carrot.New(c).Echo(nil, err)
 	})
 }

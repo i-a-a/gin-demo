@@ -1,13 +1,9 @@
-package pkg
+package util
 
 import (
 	"time"
 
 	"github.com/sirupsen/logrus"
-)
-
-var (
-	Timer timer
 )
 
 const (
@@ -16,17 +12,15 @@ const (
 	FormatTime     = "15:04:05"
 )
 
-type timer struct{}
-
-func (timer) NowString() string {
+func TimeString() string {
 	return time.Now().Format(FormatDatetime)
 }
 
-func (timer) Time2String(t time.Time) string {
+func Time2String(t time.Time) string {
 	return t.Format(FormatDatetime)
 }
 
-func (timer) String2Time(s string) time.Time {
+func String2Time(s string) time.Time {
 	t, err := time.ParseInLocation(FormatDatetime, s, time.Local)
 	if err != nil {
 		logrus.WithField("String2Time", s).Warn(err)

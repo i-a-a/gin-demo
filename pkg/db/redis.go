@@ -8,46 +8,48 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gomodule/redigo/redis"
+	"github.com/spf13/viper"
 )
 
 var (
-	Redis       myRedis
+	Redis myRedis
+
 	ErrRedisNil = redis.ErrNil
 )
 
-type myRedis struct {
-	pool   *redis.Pool
-	Config struct {
-		Host   string
-		Port   int
-		Auth   string
-		Select int
-	}
+// redis
+type redisConfig struct {
+	Host   string
+	Port   int
+	Auth   string
+	Select int
 }
 
-func (r *myRedis) Connect(force bool) error {
-	if !force && r.Config.Host == "" {
-		fmt.Println("[WARN] redis host is empty")
-		return nil
-	}
-	conn, err := redis.Dial("tcp", r.Config.Host+":"+strconv.Itoa(r.Config.Port),
-		redis.DialPassword(r.Config.Auth),
-		redis.DialDatabase(r.Config.Select),
+type myRedis struct {
+	pool *redis.Pool
+}
+
+func ConnectRedis() {
+	var conf redisConfig
+	viper.UnmarshalKey("redis", &conf)
+
+	conn, err := redis.Dial("tcp", conf.Host+":"+strconv.Itoa(conf.Port),
+		redis.DialPassword(conf.Auth),
+		redis.DialDatabase(conf.Select),
 		redis.DialConnectTimeout(time.Second*2),
 	)
 	if err != nil {
 		panic(err)
 	}
 
-	r.pool = &redis.Pool{
+	Redis.pool = &redis.Pool{
 		IdleTimeout: time.Second * 2,
 		Wait:        true,
 		Dial: func() (redis.Conn, error) {
 			return conn, nil
 		},
 	}
-	fmt.Println("Connect redis success")
-	return nil
+	fmt.Println("Redis连接成功")
 }
 
 type RedisCmd struct {
